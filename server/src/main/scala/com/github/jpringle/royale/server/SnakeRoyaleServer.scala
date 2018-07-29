@@ -10,12 +10,15 @@ import com.google.common.util.concurrent.AbstractService
 
 import scala.util.{Failure, Success}
 
-class SnakeRoyaleServer(port: Int)(implicit val system: ActorSystem, m: ActorMaterializer) extends AbstractService {
+class SnakeRoyaleServer(port: Int, contentRoot: String)(implicit val system: ActorSystem, m: ActorMaterializer) extends AbstractService {
   private var binding: ServerBinding = _
   private val log = org.slf4j.LoggerFactory.getLogger(getClass.getName)
 
-  private val route = path("hello") {
-    complete("world")
+
+  private val route = path("ping") {
+    complete("pong!")
+  } ~ pathPrefix("") {
+    getFromDirectory(contentRoot)
   }
 
   override def doStart(): Unit = {

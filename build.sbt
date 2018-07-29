@@ -22,7 +22,8 @@ lazy val server = project
     "com.typesafe.akka" %% "akka-slf4j" % "2.5.14",
     "com.google.guava" % "guava" % "25.1-jre",
     "ch.qos.logback" % "logback-classic" % "1.2.3",
-    "org.slf4j" % "slf4j-api" % "1.7.25"
+    "org.slf4j" % "slf4j-api" % "1.7.25",
+    "com.typesafe" % "config" % "1.2.1"
   ))
 
 lazy val royale = project
