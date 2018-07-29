@@ -76,6 +76,7 @@ message MoveRequest {
 message ClientEvent {
     oneof event {
         MoveRequest move_request = 1;
+        JoinRequest join_request = 2;
     }
 }
 
@@ -85,6 +86,7 @@ message ServerEvent {
     oneof event {
         PlayerSnapshot player_snapshot = 1;
         PlayerDisconnected player_disconnected = 2;
+        JoinSuccess join_success = 3;
     }
 }
 
