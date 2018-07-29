@@ -33,6 +33,7 @@
 /out/
 .idea/libraries/*
 **/scratch/*
+**/*_pb.js
 
 # mpeltonen/sbt-idea plugin
 .idea_modules/

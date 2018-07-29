@@ -7,9 +7,10 @@ lazy val akkaStreamVersion = "2.5.14"
 lazy val akkaHttpVersion = "10.1.3"
 
 lazy val common = project
-  .settings(PB.targets in Compile := Seq(
-    PB.gens.java -> (sourceManaged in Compile).value
-  ))
+  .settings(
+    PB.targets in Compile := Seq(PB.gens.java -> (sourceManaged in Compile).value),
+    PB.protocOptions in Compile := Seq("--js_out=import_style=commonjs,binary:./server/src/main/resources/webapp")
+  )
 
 lazy val server = project
   .dependsOn(common)
