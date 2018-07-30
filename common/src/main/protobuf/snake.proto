@@ -31,9 +31,11 @@ message JoinResponse {
 message GameInfo {
 }
 
-// Name/position of every active player
-message CurrentState {
-    repeated PlayerSnapshot player_snapshots = 1;
+// Sent from client -> server
+// Board is always a square
+message GameState {
+    int32 board_size = 1;
+    repeated PlayerSnapshot players = 2;
 }
 
 // Sent from server -> client upon success
@@ -41,7 +43,6 @@ message CurrentState {
 // All following messages will be of type Tick
 message JoinSuccess {
     GameInfo game_info = 1;
-    CurrentState current_state = 2;
 }
 
 // Sent from server -> client upon failure
@@ -52,8 +53,9 @@ message JoinFailure {
 
 // Sent from server -> client
 // Indicates the current position of one player
+// x,y  are always positive
 message PlayerSnapshot {
-    string player_name = 1; // Probably better to use an Id, but let's not overthink things right away
+    string player_name = 1;
     int32 x = 2;
     int32 y = 3;
 }
@@ -80,17 +82,9 @@ message ClientEvent {
     }
 }
 
-// Sent from server -> client
-// Sent when the client should react to a server side event
 message ServerEvent {
     oneof event {
-        PlayerSnapshot player_snapshot = 1;
-        PlayerDisconnected player_disconnected = 2;
-        JoinSuccess join_success = 3;
+        GameState game_state = 1;
+        JoinResponse join_response = 2;
     }
-}
-
-// Sent from server -> client, once per tick rate
-message Tick {
-    repeated ServerEvent events = 1;
 }
