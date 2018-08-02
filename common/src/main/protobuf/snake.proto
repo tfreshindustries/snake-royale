@@ -6,10 +6,11 @@ option java_package = "com.github.jpringle.royale.common";
 option java_outer_classname = "SnakeProto";
 
 enum Direction {
-    LEFT = 0;
-    RIGHT = 1;
-    UP = 2;
-    DOWN = 3;
+    UNKNOWN = 0; // Why do I need this
+    LEFT = 1;
+    RIGHT = 2;
+    UP = 3;
+    DOWN = 4;
 }
 
 // Sent from client -> server
@@ -43,6 +44,7 @@ message GameState {
 // All following messages will be of type Tick
 message JoinSuccess {
     GameInfo game_info = 1;
+    int32 player_id = 2;
 }
 
 // Sent from server -> client upon failure
@@ -55,7 +57,7 @@ message JoinFailure {
 // Indicates the current position of one player
 // x,y  are always positive
 message PlayerSnapshot {
-    string player_name = 1;
+    int32 player_id = 1;
     int32 x = 2;
     int32 y = 3;
 }
@@ -79,6 +81,7 @@ message ClientEvent {
     oneof event {
         MoveRequest move_request = 1;
         JoinRequest join_request = 2;
+        PlayerDisconnected player_disconnected = 3;
     }
 }
 
