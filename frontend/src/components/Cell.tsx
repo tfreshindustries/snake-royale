@@ -4,6 +4,6 @@ export interface ICell {
     id: number;
 }
 
-const Cell = ({ id }: ICell) => <span className={`cell player${id}`}>{id}</span>;
+const Cell = ({ id }: ICell) => <div className={`cell player${id}`} />;
 
 export default Cell;
