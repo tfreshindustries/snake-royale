@@ -35,6 +35,7 @@ socket.addEventListener('message', function (event) {
 });
 
 function sendMoveRequest (direction: royale.Direction) {
+  console.log("sending request to move " + direction.toString());
   const moveRequest = new royale.MoveRequest({ direction: direction });
   const clientEvent = new royale.ClientEvent({ moveRequest: moveRequest });
   socket.send(royale.ClientEvent.encode(clientEvent).finish());
