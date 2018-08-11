@@ -104,3 +104,33 @@ project/plugins/project/
 # ENSIME specific
 .ensime_cache/
 .ensime
+
+#### frontend ####
+
+# dependencies
+frontend/node_modules
+
+# testing
+frontend/coverage
+
+# production
+frontend/build
+
+# misc
+frontend/.DS_Store
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# IDEs
+frontend/.idea
+frontend/.vscode
+
+# logs
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# protos
+frontend/src/proto/
