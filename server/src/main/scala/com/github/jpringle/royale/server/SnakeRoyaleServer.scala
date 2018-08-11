@@ -1,13 +1,12 @@
 package com.github.jpringle.royale.server
 
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.ws.{BinaryMessage, Message}
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
@@ -35,14 +34,20 @@ class SnakeRoyaleServer(port: Int)(implicit val system: ActorSystem, m: ActorMat
   private val eventProcessor = Flow.fromGraph(new ClientEventProcessor)
   private val moveProcessor = Flow.fromGraph(new MoveProcessor)
 
-  // Drain events if there are no subscribers
-  broadcastSource.runWith(Sink.ignore)
 
   Source.tick(0.seconds, 250.millis, akka.NotUsed)
     .zipWith(eventSource.via(eventProcessor))(Keep.right)
+    .keepAlive(250.millis, () => Seq.empty)
     .via(moveProcessor)
     .map(state => ServerEvent.newBuilder().setGameState(state).build())
     .runWith(broadcastSink)
+
+  private val asciiBoard = new AtomicReference[String]("")
+  broadcastSource.runForeach { event =>
+    event.getEventCase match {
+      case EC.GAME_STATE => asciiBoard.set(AsciiBoard.from(event.getGameState))
+    }
+  }
 
   def toStrict(message: Message): ByteString = message match {
     case BinaryMessage.Strict(data) => data
@@ -76,12 +81,7 @@ class SnakeRoyaleServer(port: Int)(implicit val system: ActorSystem, m: ActorMat
   } ~ path("ws") {
     handleWebSocketMessages(flow)
   } ~ path("ascii") {
-    val src = broadcastSource
-      .filter(_.getEventCase == EC.GAME_STATE)
-      .take(1)
-      .map { ev => AsciiBoard.from(ev.getGameState) }
-      .map { s => ByteString(s) }
-    complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, src))
+    complete(asciiBoard.get())
   }
 
   override def doStart(): Unit = {
