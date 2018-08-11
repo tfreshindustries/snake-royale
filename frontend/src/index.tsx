@@ -5,6 +5,10 @@ import './index.css';
 import registerServiceWorker from './registerServiceWorker';
 import { royale } from './proto/model';
 
+/////////////////
+// WEB SOCKETS //
+/////////////////
+
 const socket = new WebSocket('ws://localhost:12345/ws');
 socket.binaryType = 'arraybuffer';
 
@@ -22,6 +26,10 @@ socket.addEventListener('message', function (event) {
     case "gameState": {
       console.log("received GameState")
       console.log(serverEvent.gameState)
+      if (serverEvent.gameState) {
+        const gameState = new royale.GameState(serverEvent.gameState);
+        handleGameState(gameState);
+      }
       break;
     }
 
@@ -33,6 +41,37 @@ socket.addEventListener('message', function (event) {
 
   }
 });
+
+//////////////////////
+// MESSAGE HANDLERS //
+//////////////////////
+
+function handleGameState(gameState: royale.GameState) {
+  var matrix = Array(50).fill(Array(50).fill(0));
+  gameState.players.forEach(player => {
+    if (player.x && player.y) {
+      matrix[player.x][player.y] = player.playerId;
+    }
+  })
+  renderGrid(matrix);
+}
+
+///////////////
+// RENDERING //
+///////////////
+
+function renderGrid(matrix: number[][]) {
+  ReactDOM.render(
+    <div className="container">
+      <Grid matrix={matrix} />
+    </div>,
+    document.getElementById('root') as HTMLElement
+  );
+}
+
+//////////////
+// MOVEMENT //
+//////////////
 
 function sendMoveRequest (direction: royale.Direction) {
   console.log("sending request to move " + direction.toString());
@@ -65,9 +104,9 @@ document.onkeydown = function (e) {
   return false;
 }
 
-ReactDOM.render(
-  <Grid matrix={Array(50).fill(Array(50).fill(0))} />,
-  document.getElementById('root') as HTMLElement
-);
+//////////
+// MAIN //
+//////////
 
+renderGrid(Array(50).fill(Array(50).fill(0)));
 registerServiceWorker();
