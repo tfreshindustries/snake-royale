@@ -29,7 +29,7 @@ export default Hello;
 
 function sendJoinRequest() {
   const msg = new royale.JoinRequest({playerName: 'sam'})
-  alert("Player name is: " + msg.playerName);
+  return msg;
 }
 
 function getExclamationMarks(numChars: number) {
