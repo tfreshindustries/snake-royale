@@ -81,7 +81,7 @@ class SnakeRoyaleServer(port: Int)(implicit val system: ActorSystem, m: ActorMat
       .take(1)
       .map { ev => AsciiBoard.from(ev.getGameState) }
       .map { s => ByteString(s) }
-    complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, src))
+    complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, src))
   }
 
   override def doStart(): Unit = {

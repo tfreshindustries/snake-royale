@@ -22,7 +22,7 @@ class MoveProcessor extends GraphStage[FlowShape[Seq[CandidateMoveWithId], GameS
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with StageLogging {
 
-    private val boardSize = 100 //TODO
+    private val boardSize = 50 //TODO
     private val playerPositions: mutable.Map[Int, Position] = mutable.Map.empty
     private val playerDirections: mutable.Map[Int, Direction] = mutable.Map.empty
 
@@ -30,7 +30,7 @@ class MoveProcessor extends GraphStage[FlowShape[Seq[CandidateMoveWithId], GameS
       xs.foreach { x =>
         // Add new players if necessary
         playerPositions.get(x.id) match {
-          case None => playerPositions(x.id) = Position(50, 50) // TODO - find somewhere open
+          case None => playerPositions(x.id) = Position(25, 25) // TODO - find somewhere open
           case _ =>
         }
         // Update any changed player directions
