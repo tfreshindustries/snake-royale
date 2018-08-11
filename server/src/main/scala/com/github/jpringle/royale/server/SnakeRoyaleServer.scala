@@ -7,14 +7,16 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.ws.{BinaryMessage, Message}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, MergeHub, Sink, Source}
 import akka.util.ByteString
-import com.github.jpringle.royale.common.SnakeProto
+import com.github.jpringle.royale.common.SnakeProto.ServerEvent.{EventCase => EC}
 import com.github.jpringle.royale.common.SnakeProto.{ClientEvent, JoinResponse, JoinSuccess, ServerEvent}
 import com.github.jpringle.royale.server.Protocol.ClientEventWithId
+import com.github.jpringle.royale.server.game.AsciiBoard
 import com.github.jpringle.royale.server.graphstage.{ClientEventProcessor, MoveProcessor}
 import com.google.common.util.concurrent.AbstractService
 
@@ -73,6 +75,13 @@ class SnakeRoyaleServer(port: Int)(implicit val system: ActorSystem, m: ActorMat
     complete("pong!")
   } ~ path("ws") {
     handleWebSocketMessages(flow)
+  } ~ path("ascii") {
+    val src = broadcastSource
+      .filter(_.getEventCase == EC.GAME_STATE)
+      .take(1)
+      .map { ev => AsciiBoard.from(ev.getGameState) }
+      .map { s => ByteString(s) }
+    complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, src))
   }
 
   override def doStart(): Unit = {
