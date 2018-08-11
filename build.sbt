@@ -23,7 +23,9 @@ lazy val server = project
     "com.google.guava" % "guava" % "25.1-jre",
     "ch.qos.logback" % "logback-classic" % "1.2.3",
     "org.slf4j" % "slf4j-api" % "1.7.25",
-    "com.typesafe" % "config" % "1.2.1"
+    "com.typesafe" % "config" % "1.2.1",
+    "org.scalactic" %% "scalactic" % "3.0.5",
+    "org.scalatest" %% "scalatest" % "3.0.5" % "test"
   ))
 
 lazy val royale = project
