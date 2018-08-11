@@ -3,3 +3,14 @@ body {
   padding: 0;
   font-family: sans-serif;
 }
+
+.cell {
+  background-color: blue;
+  border: 1px solid black;
+  height: 10px;
+  width: 10px;
+}
+
+.grid {
+  border: 5px solid black;
+}

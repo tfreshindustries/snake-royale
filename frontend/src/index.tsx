@@ -1,11 +1,12 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import Hello from './components/Hello';
+import Grid from './components/Grid';
 import './index.css';
 import registerServiceWorker from './registerServiceWorker';
 
 ReactDOM.render(
-  <Hello name="Sam" enthusiasmLevel={10} />,
+  <Grid matrix={ Array(50).fill(Array(50).fill(0)) } />,
   document.getElementById('root') as HTMLElement
 );
+
 registerServiceWorker();
