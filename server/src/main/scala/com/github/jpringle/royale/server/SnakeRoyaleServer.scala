@@ -16,7 +16,7 @@ import com.github.jpringle.royale.common.SnakeProto.ServerEvent.{EventCase => EC
 import com.github.jpringle.royale.common.SnakeProto.{ClientEvent, JoinResponse, JoinSuccess, ServerEvent}
 import com.github.jpringle.royale.server.Protocol.ClientEventWithId
 import com.github.jpringle.royale.server.game.AsciiBoard
-import com.github.jpringle.royale.server.graphstage.{ClientEventProcessor, MoveProcessor}
+import com.github.jpringle.royale.server.graphstage.{ClientEventAggregator, MoveProcessor}
 import com.google.common.util.concurrent.AbstractService
 
 import scala.concurrent.duration._
@@ -31,9 +31,8 @@ class SnakeRoyaleServer(port: Int)(implicit val system: ActorSystem, m: ActorMat
   private val broadcastHub = BroadcastHub.sink[ServerEvent](bufferSize = 256)
   private val (eventSink, eventSource) = mergeHub.preMaterialize()
   private val (broadcastSource, broadcastSink) = broadcastHub.preMaterialize()
-  private val eventProcessor = Flow.fromGraph(new ClientEventProcessor)
+  private val eventProcessor = Flow.fromGraph(new ClientEventAggregator)
   private val moveProcessor = Flow.fromGraph(new MoveProcessor)
-
 
   Source.tick(0.seconds, 250.millis, akka.NotUsed)
     .zipWith(eventSource.via(eventProcessor))(Keep.right)
@@ -46,6 +45,7 @@ class SnakeRoyaleServer(port: Int)(implicit val system: ActorSystem, m: ActorMat
   broadcastSource.runForeach { event =>
     event.getEventCase match {
       case EC.GAME_STATE => asciiBoard.set(AsciiBoard.from(event.getGameState))
+      case _ =>
     }
   }
 
@@ -73,7 +73,7 @@ class SnakeRoyaleServer(port: Int)(implicit val system: ActorSystem, m: ActorMat
     val source = joinResponseSource.concat(broadcastSource)
       .map { event => BinaryMessage.Strict(ByteString.fromArray(event.toByteArray)) }
 
-    Flow.fromSinkAndSource(sink, source)
+    Flow.fromSinkAndSource(sink, source).backpressureTimeout(1.second)
   }
 
   val route: Route = path("ping") {

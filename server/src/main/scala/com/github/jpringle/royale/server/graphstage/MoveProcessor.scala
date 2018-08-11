@@ -2,8 +2,9 @@ package com.github.jpringle.royale.server.graphstage
 
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
+import com.github.jpringle.royale.common.SnakeProto.ClientEvent.{EventCase => EC}
 import com.github.jpringle.royale.common.SnakeProto.{Direction, GameState, PlayerSnapshot}
-import com.github.jpringle.royale.server.Protocol.CandidateMoveWithId
+import com.github.jpringle.royale.server.Protocol.{CandidateMoveWithId, ClientEventWithId}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -14,11 +15,11 @@ import scala.collection.mutable
 
 case class Position(x: Int, y: Int)
 
-class MoveProcessor extends GraphStage[FlowShape[Seq[CandidateMoveWithId], GameState]] {
-  private val in: Inlet[Seq[CandidateMoveWithId]] = Inlet("MoveProcessor.in")
+class MoveProcessor extends GraphStage[FlowShape[Seq[ClientEventWithId], GameState]] {
+  private val in: Inlet[Seq[ClientEventWithId]] = Inlet("MoveProcessor.in")
   private val out: Outlet[GameState] = Outlet("MoveProcessor.out")
 
-  override def shape: FlowShape[Seq[CandidateMoveWithId], GameState] = FlowShape.of(in, out)
+  override def shape: FlowShape[Seq[ClientEventWithId], GameState] = FlowShape.of(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with StageLogging {
 
@@ -53,7 +54,8 @@ class MoveProcessor extends GraphStage[FlowShape[Seq[CandidateMoveWithId], GameS
       // Check if anyone left the board (no collision checks yet)
       playerPositions.keySet.toSeq.foreach { id =>
         val pos = playerPositions(id)
-        if (pos.x < 0 || pos.x > boardSize || pos.y < 0 || pos.y > boardSize) {
+        if (pos.x < 0 || pos.x >= boardSize || pos.y < 0 || pos.y >= boardSize) {
+          log.info(s"Player $id ded")
           playerPositions -= id
           playerDirections -= id
         }
@@ -76,7 +78,23 @@ class MoveProcessor extends GraphStage[FlowShape[Seq[CandidateMoveWithId], GameS
 
     setHandler(in, new InHandler {
       override def onPush(): Unit = {
-        val frame = computeNextFrame(grab(in))
+        val events = grab(in)
+        // Handle join requests first
+        events.foreach { ev =>
+          ev.event.getEventCase match {
+            case EC.JOIN_REQUEST =>
+              log.info(s"Join request for player ${ev.id}")
+              playerPositions(ev.id) = Position(25, 25)
+              playerDirections(ev.id) = Direction.LEFT
+            case _ =>
+          }
+        }
+        // then handle move requests
+        val candidateMoves = events
+          .filter(_.event.getEventCase == EC.MOVE_REQUEST)
+          .map { x => CandidateMoveWithId(x.id, x.event.getMoveRequest) }
+
+        val frame = computeNextFrame(candidateMoves)
         push(out, frame)
       }
     })
