@@ -34,8 +34,38 @@ socket.addEventListener('message', function (event) {
   }
 });
 
+function sendMoveRequest (direction: royale.Direction) {
+  const moveRequest = new royale.MoveRequest({ direction: direction });
+  const clientEvent = new royale.ClientEvent({ moveRequest: moveRequest });
+  socket.send(royale.ClientEvent.encode(clientEvent).finish());
+}
+
+document.onkeydown = function (e) {
+  e = e || window.event;
+  switch (e.which || e.keyCode) {
+    case 37: {
+      sendMoveRequest(royale.Direction.LEFT);
+      return false;
+    }
+    case 38: {
+      sendMoveRequest(royale.Direction.UP);
+      return false;
+    }
+    case 39: {
+      sendMoveRequest(royale.Direction.RIGHT);
+      return false;
+    }
+    case 40: {
+      sendMoveRequest(royale.Direction.DOWN);
+      return false;
+    }
+  }
+
+  return false;
+}
+
 ReactDOM.render(
-  <Grid matrix={ Array(50).fill(Array(50).fill(0)) } />,
+  <Grid matrix={Array(50).fill(Array(50).fill(0))} />,
   document.getElementById('root') as HTMLElement
 );
 
