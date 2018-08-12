@@ -1,9 +1,16 @@
 import * as React from 'react';
 
 export interface ICell {
-    id: number;
+    style: React.CSSProperties;
 }
 
-const Cell = ({ id }: ICell) => <div className={`cell player${id}`}>{id}</div>;
+const Cell = ({ style }: ICell) => {
+    return (
+        <div
+            className={'cell'}
+            style={style}
+        />
+    );
+}
 
 export default Cell;

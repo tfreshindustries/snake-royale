@@ -3,16 +3,18 @@ import * as React from 'react';
 import Cell from './Cell';
 
 export interface IGrid {
-    matrix: number[][];
+    matrix: React.CSSProperties[][];
 }
 
 const Grid = ({ matrix }: IGrid) => (
-    <div className="grid">
-        {matrix.map((col, i) =>
-            <div key={i} className="col">
-                {col.map((row, j) => <Cell key={j} id={row} />)}
-            </div>
-        )}
+    <div className="container">
+        <div className="grid">
+            {matrix.map((row, i) =>
+                <div key={i} className="row">
+                    {row.map((_, j) => <Cell key={j} style={matrix[i][j]} />)}
+                </div>
+            )}
+        </div>
     </div>
 );
 

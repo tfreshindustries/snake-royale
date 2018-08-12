@@ -1,112 +1,148 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
+
 import Grid from './components/Grid';
-import './index.css';
 import registerServiceWorker from './registerServiceWorker';
 import { royale } from './proto/model';
 
-/////////////////
-// WEB SOCKETS //
-/////////////////
+import './index.css';
 
-const socket = new WebSocket('ws://localhost:12345/ws');
+////////////////////
+// INITIALIZATION //
+////////////////////
+
+const boardHeight = 60;
+const boardWidth = 100;
+const serverURL = 'ws://localhost:12345/ws';
+const defaultStyle = {
+    backgroundColor: 'white'
+};
+
+// WEB SOCKET
+
+let socket = new WebSocket(serverURL);
+
 socket.binaryType = 'arraybuffer';
+socket.onopen = (event) => sendJoinRequest
 
-socket.addEventListener('open', function (event) {
-  const joinRequest = new royale.JoinRequest({ playerName: 'sam2' })
-  const clientEvent = new royale.ClientEvent({ joinRequest: joinRequest })
-  socket.send(royale.ClientEvent.encode(clientEvent).finish());
-});
+////////////////////
+// GAME COMPONENT //
+////////////////////
 
-socket.addEventListener('message', function (event) {
-  var bytearray = new Uint8Array(event.data);
-  const serverEvent = royale.ServerEvent.decode(bytearray);
-  switch (serverEvent.event) {
+interface IGameProps { }
 
-    case "gameState": {
-      console.log("received GameState")
-      console.log(serverEvent.gameState)
-      if (serverEvent.gameState) {
-        const gameState = new royale.GameState(serverEvent.gameState);
-        handleGameState(gameState);
-      }
-      break;
-    }
-
-    case "joinResponse": {
-      console.log("received JoinResponse")
-      console.log(serverEvent.joinResponse)
-      break;
-    }
-
-  }
-});
-
-//////////////////////
-// MESSAGE HANDLERS //
-//////////////////////
-
-function handleGameState(gameState: royale.GameState) {
-  var matrix = Array(50).fill(Array(50).fill(0));
-  gameState.players.forEach(player => {
-    if (player.x && player.y) {
-      matrix[player.x][player.y] = player.playerId;
-    }
-  })
-  renderGrid(matrix);
+interface IGameState {
+    matrix: React.CSSProperties[][]
 }
 
-///////////////
-// RENDERING //
-///////////////
+class Game extends React.Component<IGameProps, IGameState> {
 
-function renderGrid(matrix: number[][]) {
-  ReactDOM.render(
-    <div className="container">
-      <Grid matrix={matrix} />
-    </div>,
-    document.getElementById('root') as HTMLElement
-  );
+    constructor(props: IGameProps) {
+        super(props);
+        this.state = {
+            matrix: makeEmptyBoard(boardHeight, boardWidth)
+        };
+    }
+
+    handleGameState(gameState: royale.GameState) {
+        console.log("TODO: handle game state");
+    }
+
+    handleJoinResponse(joinResponse: royale.JoinResponse) {
+        console.log("TODO: handle join response");
+    }
+
+    handleServerEvent(serverEvent: royale.ServerEvent) {
+        switch (serverEvent.event) {
+            case "gameState": {
+                this.handleGameState(serverEvent.gameState as royale.GameState);
+                break;
+            }
+            case "joinResponse": {
+                this.handleJoinResponse(serverEvent.joinResponse as royale.JoinResponse);
+                break;
+            }
+        }
+    }
+
+    componentDidMount() {
+        socket.onmessage = (event) => {
+            let bytearray = new Uint8Array(event.data);
+            let serverEvent = royale.ServerEvent.decode(bytearray);
+            this.handleServerEvent(serverEvent);
+        }
+    }
+
+    render() {
+        return <Grid matrix={this.state.matrix} />
+    }
+
 }
+
+export default Game;
 
 //////////////
 // MOVEMENT //
 //////////////
 
-function sendMoveRequest (direction: royale.Direction) {
-  console.log("sending request to move " + direction.toString());
-  const moveRequest = new royale.MoveRequest({ direction: direction });
-  const clientEvent = new royale.ClientEvent({ moveRequest: moveRequest });
-  socket.send(royale.ClientEvent.encode(clientEvent).finish());
+function sendMoveRequest(direction: royale.Direction) {
+    const moveRequest = new royale.MoveRequest({ direction: direction });
+    const clientEvent = new royale.ClientEvent({ moveRequest: moveRequest });
+    socket.send(royale.ClientEvent.encode(clientEvent).finish());
 }
 
 document.onkeydown = function (e) {
-  e = e || window.event;
-  switch (e.which || e.keyCode) {
-    case 37: {
-      sendMoveRequest(royale.Direction.LEFT);
-      return false;
+    e = e || window.event;
+    switch (e.which || e.keyCode) {
+        case 37: {
+            sendMoveRequest(royale.Direction.LEFT);
+            return false;
+        }
+        case 38: {
+            sendMoveRequest(royale.Direction.UP);
+            return false;
+        }
+        case 39: {
+            sendMoveRequest(royale.Direction.RIGHT);
+            return false;
+        }
+        case 40: {
+            sendMoveRequest(royale.Direction.DOWN);
+            return false;
+        }
     }
-    case 38: {
-      sendMoveRequest(royale.Direction.UP);
-      return false;
-    }
-    case 39: {
-      sendMoveRequest(royale.Direction.RIGHT);
-      return false;
-    }
-    case 40: {
-      sendMoveRequest(royale.Direction.DOWN);
-      return false;
-    }
-  }
 
-  return false;
+    return false;
+}
+
+////////////////////
+// HELPER METHODS //
+////////////////////
+
+function makeEmptyBoard(height: number, width: number): React.CSSProperties[][] {
+
+    var board: React.CSSProperties[][] = new Array(height);
+    for (var i = 0; i < height; i++) {
+        board[i] = new Array(width).fill(defaultStyle);
+    }
+
+    return board;
+}
+
+function sendJoinRequest() {
+    let name = prompt("Choose a name for your snake.", "");
+    let joinRequest = new royale.JoinRequest({ playerName: name })
+    let clientEvent = new royale.ClientEvent({ joinRequest: joinRequest })
+    socket.send(royale.ClientEvent.encode(clientEvent).finish());
 }
 
 //////////
 // MAIN //
 //////////
 
-renderGrid(Array(50).fill(Array(50).fill(0)));
+ReactDOM.render(
+    <Game />,
+    document.getElementById('root') as HTMLElement
+);
+
 registerServiceWorker();
