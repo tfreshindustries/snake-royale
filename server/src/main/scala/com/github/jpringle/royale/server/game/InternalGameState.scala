@@ -111,6 +111,7 @@ class InternalGameState(width: Int, height: Int) {
     }
     crashed.foreach { id =>
       log.info(s"player $id crashed into another player!")
+      playerState(id).occupies.foreach(food.add)
       playerState -= id
     }
   }
