@@ -14,9 +14,10 @@ import './index.css';
 // CONSTANTS
 
 const defaultBoard: React.CSSProperties[][] = [[]];
-const defaultProperties: React.CSSProperties = { backgroundColor: 'white' };
-const meProperties: React.CSSProperties = { backgroundColor: 'purple' }
+const defaultProperties: React.CSSProperties = { backgroundColor: '#ffffff' };
+const meProperties: React.CSSProperties = { backgroundColor: '#b300b3' }
 const themProperties: React.CSSProperties = { backgroundColor: 'black' }
+const foodProperties: React.CSSProperties = { backgroundColor: '#ff9933' }
 const serverURL = 'ws://192.168.1.172:12345/ws';
 
 // WEB SOCKET
@@ -53,13 +54,24 @@ class Game extends React.Component<IGameCompProps, IGameCompState> {
         matrix[point.y][point.x] = properties;
     }
 
+    updateMatrixForFood(matrix: React.CSSProperties[][], point: royale.Point) {
+        matrix[point.y][point.x] = foodProperties;
+    }
+
     handleGameState(gameState: royale.GameState) {
         var matrix = makeDefaultMatrix(gameState.boardHeight, gameState.boardWidth);
+
+        // Update matrix for players
         let players = gameState.players as royale.Player[];
         players.forEach(player => {
             let points = player.occupies as royale.Point[];
             points.forEach(point => this.updateMatrixForPlayer(matrix, player, point));
         })
+
+        // Update matrix for food
+        let foods = gameState.food as royale.Point[];
+        foods.forEach(food => { this.updateMatrixForFood(matrix, food); })
+
         this.setState({matrix: matrix});
     }
 
