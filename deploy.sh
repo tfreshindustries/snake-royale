@@ -17,4 +17,4 @@ commit=`git log --pretty=format:'%h' -n 1`
     docker push "snakes/snakesgg:${commit}"
 )
 
-echo "docker run --network=host snakes/snakesgg:${commit}"
+echo "docker run -p 80:80 snakes/snakesgg:${commit}"
