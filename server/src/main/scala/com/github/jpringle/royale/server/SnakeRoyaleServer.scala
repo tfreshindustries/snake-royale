@@ -1,6 +1,6 @@
 package com.github.jpringle.royale.server
 
-import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
+import java.util.concurrent.atomic.AtomicInteger
 
 import akka.NotUsed
 import akka.actor.ActorSystem
@@ -12,11 +12,9 @@ import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, MergeHub, Sink, Source}
 import akka.util.ByteString
-import com.github.jpringle.royale.common.SnakeProto.ServerEvent.{EventCase => EC}
 import com.github.jpringle.royale.common.SnakeProto.{ClientEvent, JoinResponse, JoinSuccess, ServerEvent}
-import com.github.jpringle.royale.server.Protocol.ClientEventWithId
-import com.github.jpringle.royale.server.game.AsciiBoard
-import com.github.jpringle.royale.server.graphstage.{ClientEventAggregator, MoveProcessor}
+import com.github.jpringle.royale.server.Protocol.{AtomicUpdate, ClientEventWithId}
+import com.github.jpringle.royale.server.graphstage.{CurrentStateStage, PendingEventStage}
 import com.google.common.util.concurrent.AbstractService
 
 import scala.concurrent.duration._
@@ -31,23 +29,15 @@ class SnakeRoyaleServer(port: Int)(implicit val system: ActorSystem, m: ActorMat
   private val broadcastHub = BroadcastHub.sink[ServerEvent](bufferSize = 256)
   private val (eventSink, eventSource) = mergeHub.preMaterialize()
   private val (broadcastSource, broadcastSink) = broadcastHub.preMaterialize()
-  private val eventProcessor = Flow.fromGraph(new ClientEventAggregator)
-  private val moveProcessor = Flow.fromGraph(new MoveProcessor)
+
+  // drain events when there are no subscribers
+  broadcastSource.runWith(Sink.ignore)
 
   Source.tick(0.seconds, 250.millis, akka.NotUsed)
-    .zipWith(eventSource.via(eventProcessor))(Keep.right)
-    .keepAlive(250.millis, () => Seq.empty)
-    .via(moveProcessor)
-    .map(state => ServerEvent.newBuilder().setGameState(state).build())
+    .zipWith(eventSource.via(new PendingEventStage))(Keep.right)
+    .keepAlive(250.millis, () => AtomicUpdate(Seq.empty, Seq.empty))
+    .via(new CurrentStateStage(width = 128, height = 72))
     .runWith(broadcastSink)
-
-  private val asciiBoard = new AtomicReference[String]("")
-  broadcastSource.runForeach { event =>
-    event.getEventCase match {
-      case EC.GAME_STATE => asciiBoard.set(AsciiBoard.from(event.getGameState))
-      case _ =>
-    }
-  }
 
   def toStrict(message: Message): ByteString = message match {
     case BinaryMessage.Strict(data) => data
@@ -80,8 +70,6 @@ class SnakeRoyaleServer(port: Int)(implicit val system: ActorSystem, m: ActorMat
     complete("pong!")
   } ~ path("ws") {
     handleWebSocketMessages(flow)
-  } ~ path("ascii") {
-    complete(asciiBoard.get())
   }
 
   override def doStart(): Unit = {

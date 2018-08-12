@@ -30,9 +30,13 @@ class TrivialMovementTest extends FlatSpec with ScalatestRouteTest with Matchers
         case x => throw new AssertionError(s"Did not receive a JoinResponse (got $x)")
       }
 
-      val resp1 = wsClient.expectMessage().asBinaryMessage
-      val ev1 = ServerEvent.parseFrom(resp1.getStrictData.toByteBuffer)
-      ev1.getEventCase shouldEqual EC.GAME_STATE
+      (0 until 10).foreach { i =>
+        val resp = wsClient.expectMessage().asBinaryMessage
+        val ev = ServerEvent.parseFrom(resp.getStrictData.toByteBuffer)
+        ev.getEventCase shouldEqual EC.GAME_STATE
+        println(ev.toString)
+        println("---")
+      }
     }
   }
 }

@@ -32,11 +32,18 @@ message JoinResponse {
 message GameInfo {
 }
 
+message Point {
+    int32 x = 1;
+    int32 y = 2;
+}
+
 // Sent from client -> server
 // Board is always a square
 message GameState {
-    int32 board_size = 1;
-    repeated PlayerSnapshot players = 2;
+    int32 board_width = 1;
+    int32 board_height = 2;
+    map<int32, string> id_to_name = 3;
+    repeated Player players = 4;
 }
 
 // Sent from server -> client upon success
@@ -56,10 +63,9 @@ message JoinFailure {
 // Sent from server -> client
 // Indicates the current position of one player
 // x,y  are always positive
-message PlayerSnapshot {
+message Player {
     int32 player_id = 1;
-    int32 x = 2;
-    int32 y = 3;
+    repeated Point occupies = 2;
 }
 
 // Sent from server -> client
