@@ -30,7 +30,7 @@ class PendingEventStage extends GraphStage[FlowShape[ClientEventWithId, AtomicUp
     setHandler(in, new InHandler {
       override def onPush(): Unit = {
         val elem = grab(in)
-        log.info(s"Player ${elem.id} sent ${elem.event}")
+        log.debug(s"Player ${elem.id} sent ${elem.event}")
         elem.event.getEventCase match {
           case EC.JOIN_REQUEST => joinBuf(elem.id) = elem.event.getJoinRequest.getPlayerName
           case EC.MOVE_REQUEST => moveBuf(elem.id) = elem.event.getMoveRequest.getDirection

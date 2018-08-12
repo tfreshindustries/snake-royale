@@ -18,9 +18,11 @@ const defaultProperties: React.CSSProperties = { backgroundColor: '#ffffff' };
 const meProperties: React.CSSProperties = { backgroundColor: '#b300b3' }
 const themProperties: React.CSSProperties = { backgroundColor: 'black' }
 const foodProperties: React.CSSProperties = { backgroundColor: '#ff9933' }
-const serverURL = 'ws://192.168.1.172:12345/ws';
 
-// WEB SOCKET
+const loc = window.location;
+var serverURL = (loc.protocol === "https") ? "wss" : "ws";
+serverURL += "://" + loc.host + "/ws"
+console.log(serverURL)
 
 let socket = new WebSocket(serverURL);
 
@@ -134,7 +136,7 @@ document.onkeydown = function (e) {
         }
     }
 
-    return false;
+    return true;
 }
 
 ////////////////////

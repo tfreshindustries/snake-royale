@@ -1,5 +1,6 @@
 package com.github.jpringle.royale.server
 
+import java.nio.file.Paths
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.NotUsed
@@ -20,10 +21,9 @@ import com.google.common.util.concurrent.AbstractService
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
-class SnakeRoyaleServer(port: Int)(implicit val system: ActorSystem, m: ActorMaterializer) extends AbstractService {
+class SnakeRoyaleServer(port: Int, contentRoot: String)(implicit val system: ActorSystem, m: ActorMaterializer) extends AbstractService {
   private var binding: ServerBinding = _
   private val log = org.slf4j.LoggerFactory.getLogger(getClass.getName)
-
   private val idGen = new AtomicInteger(1)
   private val mergeHub = MergeHub.source[ClientEventWithId](perProducerBufferSize = 16)
   private val broadcastHub = BroadcastHub.sink[ServerEvent](bufferSize = 256)
@@ -33,9 +33,11 @@ class SnakeRoyaleServer(port: Int)(implicit val system: ActorSystem, m: ActorMat
   // drain events when there are no subscribers
   broadcastSource.runWith(Sink.ignore)
 
-  Source.tick(0.seconds, 100.millis, akka.NotUsed)
+  private val tickRate: FiniteDuration = 75.millis
+
+  Source.tick(0.seconds, tickRate, akka.NotUsed)
     .zipWith(eventSource.via(new PendingEventStage))(Keep.right)
-    .keepAlive(100.millis, () => AtomicUpdate(Seq.empty, Seq.empty))
+    .keepAlive(tickRate, () => AtomicUpdate(Seq.empty, Seq.empty))
     .via(new CurrentStateStage(width = 128, height = 72))
     .runWith(broadcastSink)
 
@@ -70,7 +72,12 @@ class SnakeRoyaleServer(port: Int)(implicit val system: ActorSystem, m: ActorMat
     complete("pong!")
   } ~ path("ws") {
     handleWebSocketMessages(flow)
-  }
+  } ~ path("" ~ PathEnd) {
+    getFromDirectory(Paths.get(contentRoot, "index.html").toAbsolutePath.toString)
+  } ~
+    pathPrefix("") {
+      getFromDirectory(contentRoot)
+    }
 
   override def doStart(): Unit = {
     Http().bindAndHandle(route, "0.0.0.0", port)

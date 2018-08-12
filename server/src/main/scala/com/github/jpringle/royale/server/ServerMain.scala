@@ -11,7 +11,8 @@ object ServerMain extends App {
 
   val conf = ConfigFactory.load()
   val port = conf.getInt("royale.server.port")
-  val server = new SnakeRoyaleServer(port)
+  val contentRoot = conf.getString("royale.server.content-root")
+  val server = new SnakeRoyaleServer(port, contentRoot)
 
   server.startAsync().awaitRunning()
 }

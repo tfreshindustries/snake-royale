@@ -8,7 +8,7 @@ import com.github.jpringle.royale.common.SnakeProto.{ClientEvent, JoinRequest, S
 import org.scalatest.{FlatSpec, Matchers}
 
 class TrivialMovementTest extends FlatSpec with ScalatestRouteTest with Matchers {
-  val server = new SnakeRoyaleServer(0)
+  val server = new SnakeRoyaleServer(0, "")
   val wsClient = WSProbe()
 
   "A JoinRequest" should "emit a JoinResponse" in {
