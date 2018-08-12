@@ -11,45 +11,61 @@ import './index.css';
 // INITIALIZATION //
 ////////////////////
 
-const boardHeight = 60;
-const boardWidth = 100;
-const serverURL = 'ws://localhost:12345/ws';
-const defaultStyle = {
-    backgroundColor: 'white'
-};
+// CONSTANTS
+
+const defaultBoard: React.CSSProperties[][] = [[]];
+const defaultProperties: React.CSSProperties = { backgroundColor: 'white' };
+const meProperties: React.CSSProperties = { backgroundColor: 'purple' }
+const themProperties: React.CSSProperties = { backgroundColor: 'black' }
+const serverURL = 'ws://192.168.1.172:12345/ws';
 
 // WEB SOCKET
 
 let socket = new WebSocket(serverURL);
 
 socket.binaryType = 'arraybuffer';
-socket.onopen = (event) => sendJoinRequest
+socket.onopen = (event) => sendJoinRequest();
 
 ////////////////////
 // GAME COMPONENT //
 ////////////////////
 
-interface IGameProps { }
+interface IGameCompProps { }
 
-interface IGameState {
-    matrix: React.CSSProperties[][]
+interface IGameCompState {
+    matrix: React.CSSProperties[][],
+    playerId: number
 }
 
-class Game extends React.Component<IGameProps, IGameState> {
+class Game extends React.Component<IGameCompProps, IGameCompState> {
 
-    constructor(props: IGameProps) {
+    constructor(props: IGameCompProps) {
         super(props);
         this.state = {
-            matrix: makeEmptyBoard(boardHeight, boardWidth)
+            matrix: defaultBoard,
+            playerId: 0
         };
     }
 
+    updateMatrixForPlayer(matrix: React.CSSProperties[][], player: royale.Player, point: royale.Point) {
+        let isMe = player.playerId == this.state.playerId;
+        let properties = isMe ? meProperties : themProperties;
+        matrix[point.y][point.x] = properties;
+    }
+
     handleGameState(gameState: royale.GameState) {
-        console.log("TODO: handle game state");
+        var matrix = makeDefaultMatrix(gameState.boardHeight, gameState.boardWidth);
+        let players = gameState.players as royale.Player[];
+        players.forEach(player => {
+            let points = player.occupies as royale.Point[];
+            points.forEach(point => this.updateMatrixForPlayer(matrix, player, point));
+        })
+        this.setState({matrix: matrix});
     }
 
     handleJoinResponse(joinResponse: royale.JoinResponse) {
-        console.log("TODO: handle join response");
+        let joinSuccess = joinResponse.joinSuccess as royale.JoinSuccess;
+        this.setState({playerId: joinSuccess.playerId});
     }
 
     handleServerEvent(serverEvent: royale.ServerEvent) {
@@ -85,12 +101,6 @@ export default Game;
 // MOVEMENT //
 //////////////
 
-function sendMoveRequest(direction: royale.Direction) {
-    const moveRequest = new royale.MoveRequest({ direction: direction });
-    const clientEvent = new royale.ClientEvent({ moveRequest: moveRequest });
-    socket.send(royale.ClientEvent.encode(clientEvent).finish());
-}
-
 document.onkeydown = function (e) {
     e = e || window.event;
     switch (e.which || e.keyCode) {
@@ -119,21 +129,27 @@ document.onkeydown = function (e) {
 // HELPER METHODS //
 ////////////////////
 
-function makeEmptyBoard(height: number, width: number): React.CSSProperties[][] {
-
-    var board: React.CSSProperties[][] = new Array(height);
-    for (var i = 0; i < height; i++) {
-        board[i] = new Array(width).fill(defaultStyle);
-    }
-
-    return board;
-}
-
 function sendJoinRequest() {
     let name = prompt("Choose a name for your snake.", "");
     let joinRequest = new royale.JoinRequest({ playerName: name })
     let clientEvent = new royale.ClientEvent({ joinRequest: joinRequest })
     socket.send(royale.ClientEvent.encode(clientEvent).finish());
+}
+
+function sendMoveRequest(direction: royale.Direction) {
+    let moveRequest = new royale.MoveRequest({ direction: direction });
+    let clientEvent = new royale.ClientEvent({ moveRequest: moveRequest });
+    socket.send(royale.ClientEvent.encode(clientEvent).finish());
+    console.log("request move " + direction.toString());
+}
+
+function makeDefaultMatrix(height: number, width: number) {
+    var matrix: React.CSSProperties[][] = Array(height);
+    for (var i = 0; i < height; i++) {
+        matrix[i] = Array(width).fill(defaultProperties);
+    }
+
+    return matrix;
 }
 
 //////////
