@@ -40,7 +40,7 @@ class InternalPlayerState(val id: Int, val name: String, var occupies: List[Poin
     * Put the next point on the head of the list
     * Drop the last element in the list
     */
-  def move(): Unit = {
+  def move(grow: Boolean): Unit = {
     val hd :: _ = occupies
     val next = direction match {
       case Direction.UP => Point(hd.x, hd.y - 1)
@@ -49,7 +49,8 @@ class InternalPlayerState(val id: Int, val name: String, var occupies: List[Poin
       case Direction.RIGHT => Point(hd.x + 1, hd.y)
       case _ => throw new IllegalArgumentException
     }
-    occupies = next :: occupies.dropRight(1)
+    if (grow) occupies = next :: occupies
+    else occupies = next :: occupies.dropRight(1)
   }
 }
 
@@ -63,7 +64,8 @@ class InternalPlayerState(val id: Int, val name: String, var occupies: List[Poin
 class InternalGameState(width: Int, height: Int) {
   private val r = new scala.util.Random()
   private val log = LoggerFactory.getLogger(getClass.getName)
-  val playerState: mutable.Map[Int, InternalPlayerState] = mutable.Map.empty
+  private val food: mutable.Set[Point] = mutable.Set.empty
+  private val playerState: mutable.Map[Int, InternalPlayerState] = mutable.Map.empty
 
   /**
     * Add a new player to the game, if the player id is not already in use.
@@ -130,9 +132,27 @@ class InternalGameState(width: Int, height: Int) {
     }
   }
 
-  private def handleEvents(): Unit = {
-    handlePlayerCollisions()
-    handleBoardCollisions()
+  /**
+    * Add one food tile to the board.
+    * Location is chosen randomly from unoccupied squares.
+    */
+  private def addFood(): Unit = {
+    val occupied = playerState.values.flatMap(_.occupies)
+    val all = (0 until width).flatMap { i =>
+      (0 until height).map { j =>
+        Point(i, j)
+      }
+    }
+    val candidates = (all.toSet -- occupied.toSet).toArray
+    food += candidates(r.nextInt(candidates.length))
+  }
+
+  /**
+    * If the number of food tiles drops below the number of active players, add more food.
+    */
+  private def replenishFood(): Unit = {
+    val diff = playerState.size - food.size
+    if (diff > 0) (0 until diff).foreach(_ => addFood())
   }
 
   private def buildGameState(): GameState = {
@@ -149,11 +169,13 @@ class InternalGameState(width: Int, height: Int) {
     }
     // TODO some weirdness around casting a scala Int to a java Integer
     val idToName = playerState.map { case (id, state) => (new Integer(id), state.name) }.toMap
+    val protoFood = food.map { p => SnakeProto.Point.newBuilder().setX(p.x).setY(p.y).build() }
     GameState.newBuilder()
       .setBoardHeight(height)
       .setBoardWidth(width)
       .addAllPlayers(protoPlayers.asJava)
       .putAllIdToName(idToName.asJava)
+      .addAllFood(protoFood.asJava)
       .build()
   }
 
@@ -166,8 +188,14 @@ class InternalGameState(width: Int, height: Int) {
   def accept(upd: AtomicUpdate): GameState = {
     upd.join.foreach(acceptJoin)
     upd.move.foreach(acceptMove)
-    playerState.values.foreach(_.move())
-    handleEvents()
+    playerState.values.foreach { s =>
+      val grow = food.contains(s.occupies.head)
+      if (grow) food -= s.occupies.head
+      s.move(grow)
+    }
+    handlePlayerCollisions()
+    handleBoardCollisions()
+    replenishFood()
     buildGameState()
   }
 }

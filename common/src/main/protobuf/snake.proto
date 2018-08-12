@@ -44,6 +44,7 @@ message GameState {
     int32 board_height = 2;
     map<int32, string> id_to_name = 3;
     repeated Player players = 4;
+    repeated Point food = 5;
 }
 
 // Sent from server -> client upon success
