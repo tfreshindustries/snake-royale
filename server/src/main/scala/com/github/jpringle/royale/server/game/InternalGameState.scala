@@ -98,6 +98,10 @@ class InternalGameState(width: Int, height: Int) {
     }
   }
 
+  private def valid(p: Point): Boolean = {
+    p.x >= 0 && p.x < width && p.y >= 0 && p.y < height
+  }
+
   /**
     * If the head of any snake overlaps with another point, remove the player.
     * This can probably be done more efficiently with a little thought
@@ -111,7 +115,7 @@ class InternalGameState(width: Int, height: Int) {
     }
     crashed.foreach { id =>
       log.info(s"player $id crashed into another player!")
-      playerState(id).occupies.foreach(food.add)
+      playerState(id).occupies.filter(valid).foreach(food.add)
       playerState -= id
     }
   }
@@ -123,9 +127,8 @@ class InternalGameState(width: Int, height: Int) {
     val crashed = playerState.flatMap {
       case (id, state) =>
         val hd = state.occupies.head
-        if (hd.x < 0 | hd.x >= width | hd.y < 0 | hd.y >= height) Some(id)
-        else None
-
+        if (valid(hd)) None
+        else Some(id)
     }
     crashed.foreach { id =>
       log.info(s"player $id crashed into the edge of the board!")
