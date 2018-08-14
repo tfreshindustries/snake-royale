@@ -5,13 +5,17 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.event.{Logging, LoggingAdapter}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.ws.{BinaryMessage, Message}
+import akka.http.scaladsl.model.{HttpRequest, RemoteAddress}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import akka.stream.ActorMaterializer
+import akka.http.scaladsl.server.RouteResult.{Complete, Rejected}
+import akka.http.scaladsl.server.directives.{DebuggingDirectives, LogEntry, LoggingMagnet}
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, MergeHub, Sink, Source}
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.util.ByteString
 import com.github.jpringle.royale.common.SnakeProto.{ClientEvent, JoinResponse, JoinSuccess, ServerEvent}
 import com.github.jpringle.royale.server.Protocol.{AtomicUpdate, ClientEventWithId}
@@ -79,8 +83,24 @@ class SnakeRoyaleServer(port: Int, contentRoot: String)(implicit val system: Act
       getFromDirectory(contentRoot)
     }
 
+  private def logRequestResult(route: Route, ip: RemoteAddress)(implicit m: Materializer): Route = {
+    def doLog(adapter: LoggingAdapter)(req: HttpRequest)(res: Any): Unit = {
+      val entry = res match {
+        case Complete(resp) => Some(s"[$ip] ${req.method} ${req.uri} : ${resp.status}")
+        case Rejected(reasons) => Some(s"[$ip] REJECTED $reasons")
+        case _ => None
+      }
+      entry.foreach(e => LogEntry(e, Logging.InfoLevel).logTo(adapter))
+    }
+
+    DebuggingDirectives.logRequestResult(LoggingMagnet(adapter => doLog(adapter)))(route)
+  }
+
   override def doStart(): Unit = {
-    Http().bindAndHandle(route, "0.0.0.0", port)
+    val loggedRoute = extractClientIP { ip =>
+      logRequestResult(route, ip)
+    }
+    Http().bindAndHandle(loggedRoute, "0.0.0.0", port)
       .onComplete {
         case Success(b) =>
           binding = b
