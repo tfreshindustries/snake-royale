@@ -37,7 +37,7 @@ class SnakeRoyaleServer(port: Int, contentRoot: String)(implicit val system: Act
   // drain events when there are no subscribers
   broadcastSource.runWith(Sink.ignore)
 
-  private val tickRate: FiniteDuration = 50.milli
+  private val tickRate: FiniteDuration = 60.milli
   private val maxPendingEvents: Int = 3
 
   Source.tick(0.seconds, tickRate, akka.NotUsed)

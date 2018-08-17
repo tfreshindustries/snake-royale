@@ -24,7 +24,7 @@ class PendingEventStage(maxPendingEvents: Int) extends GraphStage[FlowShape[Clie
 
     private def enqueueDirection(direction: Direction, playerId: Int): Unit = moveBuf.get(playerId) match {
       case None => moveBuf(playerId) = Vector(direction)
-      case Some(xs) if (xs.size < maxPendingEvents) && (xs.head != direction) =>
+      case Some(xs) if (xs.size < maxPendingEvents) && (xs.last != direction) =>
         moveBuf(playerId) = moveBuf(playerId) :+ direction
       case _ =>
     }
