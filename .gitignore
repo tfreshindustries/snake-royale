@@ -134,3 +134,6 @@ frontend/yarn-error.log*
 
 # protos
 frontend/src/proto/
+
+#### build artifacts ####
+server.jar
