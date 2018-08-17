@@ -9,6 +9,11 @@ build:
 		snakesgg/builder
 	docker build -t snakesgg/server:`git rev-parse --short HEAD` .
 
-run:
+run: build
 	docker run -p 8080:80 snakesgg/server:`git rev-parse --short HEAD`
 
+publish: build
+	docker push snakesgg/server:`git rev-parse --short HEAD`
+
+deploy: publish
+	echo "TODO: use awscli to deploy new image"
