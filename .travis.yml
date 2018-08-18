@@ -7,12 +7,12 @@ before_script:
   - curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.11.0/bin/linux/amd64/kubectl
   - chmod +x ./kubectl
   - sudo mv ./kubectl /usr/bin/kubectl
-  - sed -i -e 's|KUBE_CA_CERT|'"${KUBE_CA_CERT}"'|g' ci/kubeconfig
-  - sed -i -e 's|KUBE_ENDPOINT|'"${KUBE_ENDPOINT}"'|g' ci/kubeconfig
-  - sed -i -e 's|KUBE_ADMIN_CERT|'"${KUBE_ADMIN_CERT}"'|g' ci/kubeconfig
-  - sed -i -e 's|KUBE_ADMIN_KEY|'"${KUBE_ADMIN_KEY}"'|g' ci/kubeconfig
-  - sed -i -e 's|KUBE_USERNAME|'"${KUBE_USERNAME}"'|g' ci/kubeconfig
-  - mv ci/kubeconfig ~/.kubeconfig
+  - sed -i -e 's|KUBE_CA_CERT|'"${KUBE_CA_CERT}"'|g' ci/kubeconfig.yml
+  - sed -i -e 's|KUBE_ENDPOINT|'"${KUBE_ENDPOINT}"'|g' ci/kubeconfig.yml
+  - sed -i -e 's|KUBE_ADMIN_CERT|'"${KUBE_ADMIN_CERT}"'|g' ci/kubeconfig.yml
+  - sed -i -e 's|KUBE_ADMIN_KEY|'"${KUBE_ADMIN_KEY}"'|g' ci/kubeconfig.yml
+  - sed -i -e 's|KUBE_USERNAME|'"${KUBE_USERNAME}"'|g' ci/kubeconfig.yml
+  - mv ci/kubeconfig.yml ~/.kubeconfig
 
 script:
   - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
