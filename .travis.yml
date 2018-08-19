@@ -17,9 +17,4 @@ before_script:
 script:
   - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
   - make publish
-
-deploy:
-  provider: script
-  script: make deploy
-  on:
-    branch: master
+  - [[ $TRAVIS_BRANCH = 'master' ]] && make deploy
