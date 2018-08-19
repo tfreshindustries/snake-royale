@@ -9,5 +9,5 @@ run: build
 publish: build
 	docker push snakes/server:`git rev-parse --short HEAD`
 
-deploy: publish
+deploy:
 	kubectl set image deployment/prod-snakes-server server=snakes/server:`git rev-parse --short HEAD`
