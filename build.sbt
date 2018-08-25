@@ -18,6 +18,8 @@ lazy val server = project
     "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
     "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % Test,
     "com.typesafe.akka" %% "akka-slf4j" % "2.5.14",
+    "com.typesafe.akka" %% "akka-http-spray-json" % "10.1.4",
+    "io.dropwizard.metrics" % "metrics-core" % "4.0.3",
     "com.google.guava" % "guava" % "25.1-jre",
     "ch.qos.logback" % "logback-classic" % "1.2.3",
     "org.slf4j" % "slf4j-api" % "1.7.25",
