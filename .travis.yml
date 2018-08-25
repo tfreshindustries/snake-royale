@@ -18,4 +18,3 @@ before_script:
 script:
   - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
   - make publish
-  - if [ $TRAVIS_BRANCH = "master" ]; then make deploy; fi
